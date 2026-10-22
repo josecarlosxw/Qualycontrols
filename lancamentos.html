@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lançamentos - QualiControl</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/redesign.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: { colors: { brand: { 500: '#1e4fe0', 600: '#2c63f5', 800: '#12328f', 900: '#0b0b0f' } }, fontFamily: { sans: ['Inter', 'sans-serif'] } }
+            }
+        }
+    </script>
+    <script>
+        if (localStorage.getItem('qc-theme') !== 'light') { document.documentElement.classList.add('dark'); }
+    </script>
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans antialiased flex h-screen overflow-hidden">
+
+    <aside id="app-sidebar"></aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-[#F8FAFC] dark:bg-gray-900">
+        <header class="header-premium px-8 py-5">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Novo Lançamento</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Insira os dados manualmente ou importe uma planilha do Excel.</p>
+        </header>
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-6">
+                
+                <!-- Formulário Manual -->
+                <div class="xl:col-span-2 bg-white dark:bg-gray-800 card-premium p-5 border border-gray-100 dark:border-gray-700 flex flex-col h-full">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i class="ph ph-pencil-simple text-brand-600"></i> Lançamento Manual</h3>
+                    <form id="form-lancamento" class="space-y-4 flex-1 flex flex-col">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-2 flex-1" style="max-height: 68vh;">
+                            <!-- Grupo 1: Identificação -->
+                            <div class="col-span-1 sm:col-span-2 lg:col-span-3 border-b pb-2 mb-2"><h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Identificação</h4></div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Entrada</label>
+                                <input type="date" id="data" required class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nº da RNC</label>
+                                <input type="text" id="rnc_number" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500" placeholder="Ex: AV/INTERNA">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Processo</label>
+                                <select id="process_type" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                                <select id="status" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+
+                            <!-- Grupo 2: Material -->
+                            <div class="col-span-1 sm:col-span-2 lg:col-span-3 border-b pb-2 mb-2 mt-2"><h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Material e Fornecedor</h4></div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Cód. do Material</label>
+                                <input type="text" id="material_code" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500" placeholder="Ex: 10081">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição do Material</label>
+                                <select id="produto" required class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fornecedor</label>
+                                <select id="fornecedor" required class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Lote</label>
+                                <input type="text" id="batch" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500" placeholder="Ex: S/LOTE">
+                            </div>
+
+                            <!-- Grupo 3: Quantidades -->
+                            <div class="col-span-1 sm:col-span-2 lg:col-span-3 border-b pb-2 mb-2 mt-2"><h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Quantidades</h4></div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Qtd (kg)</label>
+                                <input type="number" step="0.01" id="quantity_kg" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Qtd</label>
+                                    <input type="number" id="quantidade" required min="1" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Und Med.</label>
+                                    <select id="measure_unit" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                                        <option value="">Selecione...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Grupo 4: Qualidade -->
+                            <div class="col-span-1 sm:col-span-2 lg:col-span-3 border-b pb-2 mb-2 mt-2"><h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Qualidade e Segregação</h4></div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Motivo</label>
+                                <select id="motivo" required class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Destino</label>
+                                <select id="destino" required class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Responsável</label>
+                                <select id="responsible" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+
+                            <!-- Grupo 5: Fiscal e Documentação -->
+                            <div class="col-span-1 sm:col-span-2 lg:col-span-3 border-b pb-2 mb-2 mt-2"><h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Fiscal e Documentação</h4></div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Data Emissão NFD</label>
+                                <input type="text" id="nfd_issue_date" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500" placeholder="Ex: 01/01/2025 ou ROCHA">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nº da NFD</label>
+                                <input type="text" id="nfd_number" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500" placeholder="Ex: 8520 ou ROCHA">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Valor Uni (R$)</label>
+                                    <input type="number" step="0.01" id="unit_value" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Valor da NF</label>
+                                    <input type="number" step="0.01" id="nf_value" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Data Saída ANC.</label>
+                                <input type="date" id="anc_departure_date" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                            </div>
+                            <div class="col-span-1 sm:col-span-2 lg:col-span-3">
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Observações</label>
+                                <textarea id="observacoes" rows="2" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500"></textarea>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 rounded-lg transition-colors flex justify-center items-center gap-2 mt-4">
+                            Salvar Lançamento
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Importação Excel -->
+                <div class="lancamento-card flex flex-col h-full animate-in delay-2">
+                    <div class="card-header"><span class="header-emerald"><i class="ph ph-file-xls"></i></span> Importação em Lote</div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Selecione uma planilha do Excel contendo os lançamentos. A planilha deve conter as colunas do seu modelo padrão.</p>
+                    
+                    <div id="dropzone" class="dropzone-enhanced flex-1 flex flex-col justify-center items-center p-6 bg-gray-50 dark:bg-gray-700/50 min-h-[160px]">
+                        <i class="ph ph-upload-simple drop-icon mb-3"></i>
+                        <input type="file" id="excel-file" accept=".xlsx, .xls" class="hidden">
+                        <label for="excel-file" class="btn-premium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors mb-2">
+                            Escolher Arquivo
+                        </label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">ou arraste a planilha aqui</p>
+                    </div>
+
+                    <p id="file-name" class="text-sm font-medium text-brand-600 dark:text-brand-400 mt-3 truncate w-full text-center hidden"></p>
+
+                    <!-- Area de preview e stats -->
+                    <div id="import-preview-area" class="hidden">
+                        <div class="import-stats" id="import-stats"></div>
+                        <div class="import-preview">
+                            <table id="preview-table">
+                                <thead><tr></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Area de progresso -->
+                    <div id="import-progress-area" class="hidden">
+                        <div class="flex justify-between text-xs font-medium text-gray-600 dark:text-gray-400 mt-2">
+                            <span>Importando...</span>
+                            <span id="import-progress-text">0%</span>
+                        </div>
+                        <div class="import-progress-container">
+                            <div id="import-progress-bar" class="import-progress-bar"></div>
+                        </div>
+                    </div>
+
+                    <button id="btn-import" disabled class="w-full btn-premium btn-emerald disabled:bg-gray-300 disabled:opacity-70 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl transition-colors flex justify-center items-center gap-2 mt-4 text-sm">
+                        Confirmar Importação
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script>requireAuth();</script>
+    <script src="js/theme.js"></script>
+    <script src="js/components/sidebar.js"></script>
+    <script src="js/data/api.js"></script>
+    <script src="js/components/toast.js"></script>
+    <script src="js/components/lancamentos.js"></script>
+    <script src="js/components/presentation.js"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importar Planilha - QualiControl</title>
+    <meta name="description" content="Importação de planilhas de retrabalho e refugo industrial">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { brand: { 500: '#1e4fe0', 600: '#2c63f5', 800: '#12328f', 900: '#0b0b0f' } }, fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
+    </script>
+    <script>
+        if (localStorage.getItem('qc-theme') !== 'light') { document.documentElement.classList.add('dark'); }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/redesign.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans antialiased flex h-screen overflow-hidden">
+
+    <aside id="app-sidebar"></aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-[#F8FAFC] dark:bg-gray-900">
+        <header class="header-premium px-8 py-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="ph ph-upload-simple text-brand-600"></i> Importar Planilha
+                    </h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Envie a planilha no formato do modelo oficial (.xlsx, .xls ou .csv).</p>
+                </div>
+                <button id="m2-import-template" class="btn-premium flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium">
+                    <i class="ph ph-download-simple text-lg"></i> Baixar modelo
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="max-w-5xl mx-auto space-y-6">
+
+                <div class="chart-card">
+                    <h3 class="chart-title text-gray-900 dark:text-white"><i class="ph ph-file-arrow-up"></i> Arquivo</h3>
+                    <div id="m2-import-drop" class="m2-import-drop">
+                        <i class="ph ph-cloud-arrow-up text-4xl text-brand-600"></i>
+                        <p class="font-medium mt-2">Arraste a planilha aqui</p>
+                        <p class="text-sm text-gray-500 mb-4">ou selecione o arquivo no computador</p>
+                        <button id="m2-import-select" type="button" class="btn-premium btn-brand flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium">
+                            <i class="ph ph-folder-open"></i> Selecionar arquivo
+                        </button>
+                        <input type="file" id="m2-import-file" accept=".xlsx,.xls,.csv" class="hidden">
+                    </div>
+                </div>
+
+                <div id="m2-import-preview" class="chart-card hidden">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <h3 class="chart-title text-gray-900 dark:text-white mb-0"><i class="ph ph-eye"></i> Prévia</h3>
+                        <p class="text-sm text-gray-500" id="m2-import-summary"></p>
+                    </div>
+                    <div id="m2-import-preview-body"></div>
+                    <div class="flex items-center justify-end gap-3 mt-5 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <button id="m2-import-cancel" class="btn-premium px-4 py-2 rounded-lg text-sm">Cancelar</button>
+                        <button id="m2-import-confirm" class="btn-premium btn-brand flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium">
+                            <i class="ph ph-check"></i> Confirmar importação
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3 class="chart-title text-gray-900 dark:text-white"><i class="ph ph-clock-counter-clockwise"></i> Histórico de Importações</h3>
+                    <div class="overflow-x-auto" id="m2-import-history"></div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>requireAuth();</script>
+    <script src="js/theme.js"></script>
+    <script src="js/components/sidebar.js"></script>
+    <script src="js/components/toast.js"></script>
+    <script src="js/data/api-m2.js"></script>
+    <script src="js/m2/importar.js"></script>
+    <script src="js/components/presentation.js"></script>
+</body>
+</html>

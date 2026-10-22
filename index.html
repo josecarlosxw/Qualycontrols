@@ -1,13 +1,222 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<title>QualiControl</title>
-<meta http-equiv="refresh" content="0; url=/app/index.html">
-<link rel="icon" href="/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QualiControl – Dashboard de Não Conformidades</title>
+    <meta name="description" content="Dashboard completo para gestão de não conformidades na indústria e manufatura">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f0f5ff', 100: '#e5edff', 500: '#1e4fe0', 600: '#2c63f5', 800: '#12328f', 900: '#0b0b0f', }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <script>
+        // Aplica o tema salvo antes da renderização, evitando "flash" de tela clara
+        if (localStorage.getItem('qc-theme') !== 'light') {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/redesign.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
-<body>
-<script>location.replace('/app/index.html');</script>
-<p><a href="/app/index.html">Abrir o QualiControl</a></p>
+
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans antialiased flex h-screen overflow-hidden">
+
+    <aside id="app-sidebar"></aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-[#F8FAFC] dark:bg-gray-900">
+        <header class="header-premium px-8 py-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="animate-in">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="ph ph-chart-line-up text-brand-600"></i>
+                        Visão Geral de Não Conformidades
+                    </h2>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center gap-3 animate-in delay-1">
+                    <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer select-none whitespace-nowrap transition-all hover:border-brand-500/50">
+                        <input type="checkbox" id="compare-toggle" class="rounded accent-brand-600">
+                        Comparar c/ período anterior
+                    </label>
+                    <button onclick="exportToExcel()" class="btn-premium btn-emerald flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="ph ph-file-xls text-lg"></i>
+                        Exportar Excel
+                    </button>
+                    <div class="flex flex-wrap items-center gap-3 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-xl border border-gray-200 dark:border-gray-700">
+                        <select id="filter-period" class="input-premium py-2 px-3 text-sm">
+                            <option value="last30">Últimos 30 Dias</option>
+                            <option value="last90">Últimos 90 Dias</option>
+                            <option value="thisYear" selected>Este Ano</option>
+                            <option value="all">Todo Período</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="active-filters" class="hidden items-center flex-wrap gap-2 mt-3"></div>
+        </header>
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="max-w-7xl mx-auto space-y-6">
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="kpi-card kpi-total">
+                        <div class="kpi-icon"><i class="ph ph-warning-octagon"></i></div>
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Total Não Conformes</p>
+                        <h3 class="kpi-value" id="kpi-total">—</h3>
+                    </div>
+                    <div class="kpi-card kpi-rate">
+                        <div class="kpi-icon"><i class="ph ph-file-text"></i></div>
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">RNC</p>
+                        <h3 class="kpi-value" id="kpi-rnc-qty">—</h3>
+                        <p class="kpi-subvalue" id="kpi-rnc-value">R$ 0,00</p>
+                    </div>
+                    <div class="kpi-card kpi-suppliers">
+                        <div class="kpi-icon"><i class="ph ph-truck"></i></div>
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Fornecedores</p>
+                        <h3 class="kpi-value" id="kpi-suppliers">—</h3>
+                    </div>
+                    <div class="kpi-card kpi-internal">
+                        <div class="kpi-icon"><i class="ph ph-factory"></i></div>
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Avarias Internas</p>
+                        <h3 class="kpi-value" id="kpi-internal-qty">—</h3>
+                        <p class="kpi-subvalue" id="kpi-internal-value">R$ 0,00</p>
+                    </div>
+                </div>
+
+                <!-- Charts Row 1 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 qc-overview-row">
+                    <div class="chart-card animate-in delay-2">
+                        <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                            <h3 class="chart-title text-gray-900 dark:text-white mb-0"><i class="ph ph-chart-line"></i> Evolução Mensal</h3>
+                            <div class="chart-year-filter">
+                                <i class="ph ph-funnel text-gray-400"></i>
+                                <select id="evolution-type-filter">
+                                    <option value="all">Todos os Tipos</option>
+                                    <option value="rnc">Somente RNC</option>
+                                    <option value="internal">Somente Avarias Internas</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="h-72 w-full"><canvas id="evolutionChart"></canvas></div>
+                    </div>
+
+                    <div class="chart-card animate-in delay-3">
+                        <h3 class="chart-title text-gray-900 dark:text-white"><i class="ph ph-pie-chart"></i> Motivos</h3><p class="chart-caption">Distribuição das quantidades por motivo.</p>
+                        <div class="h-72 w-full"><canvas id="reasonChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="chart-card animate-in delay-4">
+                        <h3 class="chart-title text-gray-900 dark:text-white"><i class="ph ph-ranking"></i> Ranking de Fornecedores</h3><p class="chart-caption">Fornecedores classificados pela quantidade registrada.</p>
+                        <div class="h-72 w-full"><canvas id="supplierChart"></canvas></div>
+                    </div>
+                    <div class="chart-card animate-in delay-5">
+                        <h3 class="chart-title text-gray-900 dark:text-white"><i class="ph ph-map-pin"></i> Destino das Ocorrências</h3><p class="chart-caption">Distribuição das quantidades por destino.</p>
+                        <div class="h-72 w-full"><canvas id="destinationChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Internal Defects Charts -->
+                <div class="chart-card animate-in delay-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="chart-title text-gray-900 dark:text-white mb-0"><i class="ph ph-factory"></i> Avarias Internas</h3>
+                        <div class="chart-year-filter">
+                            <i class="ph ph-calendar text-gray-400"></i>
+                            <select id="internal-year-filter"></select>
+                        </div>
+                    </div>
+                    
+                    <div class="internal-summary-bar">
+                        <div class="internal-summary-item">
+                            <div class="summary-icon icon-qty"><i class="ph ph-stack"></i></div>
+                            <div>
+                                <p class="summary-label">Total Qtd</p>
+                                <p class="summary-value" id="internal-total-qty">—</p>
+                            </div>
+                        </div>
+                        <div class="internal-summary-item">
+                            <div class="summary-icon icon-value"><i class="ph ph-currency-dollar"></i></div>
+                            <div>
+                                <p class="summary-label">Total Valor</p>
+                                <p class="summary-value" id="internal-total-value">—</p>
+                            </div>
+                        </div>
+                        <div class="internal-summary-item">
+                            <div class="summary-icon icon-avg"><i class="ph ph-trend-up"></i></div>
+                            <div>
+                                <p class="summary-label">Média Mensal</p>
+                                <p class="summary-value" id="internal-avg-qty">—</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="internal-charts-grid">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Quantidade de Avarias</h4>
+                            <div class="h-64 w-full"><canvas id="internalQtyChart"></canvas></div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Valor Total (R$)</h4>
+                            <div class="h-64 w-full"><canvas id="internalValueChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Matriz Dinâmica -->
+                <div class="chart-card animate-in">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="chart-title text-gray-900 dark:text-white mb-0"><i class="ph ph-grid-four"></i> Matriz Fornecedor x Mês</h3>
+                        <span class="badge-premium badge-brand">Top 8 fornecedores</span>
+                    </div>
+                    <div class="overflow-x-auto max-h-96" id="pivot-table-container"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script>requireAuth();</script>
+    <script src="js/theme.js"></script>
+    <script src="js/components/sidebar.js"></script>
+    <script src="js/data/api.js"></script>
+    
+    <!-- We will re-create these simple versions -->
+    <script src="js/components/toast.js"></script>
+    <script src="js/components/filters.js"></script>
+    <script src="js/components/kpis.js"></script>
+    <script src="js/charts/charttheme.js"></script>
+    <script src="js/charts/evolutionchart.js"></script>
+    <script src="js/charts/supplierchart.js"></script>
+    <script src="js/charts/reasonchart.js"></script>
+    <script src="js/charts/destinationchart.js"></script>
+    <script src="js/charts/internalchart.js"></script>
+    <script src="js/components/pivottable.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/components/presentation.js"></script>
 </body>
 </html>

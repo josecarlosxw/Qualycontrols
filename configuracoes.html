@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - QualiControl</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: { colors: { brand: { 500: '#1e4fe0', 600: '#2c63f5', 800: '#12328f', 900: '#0b0b0f' } }, fontFamily: { sans: ['Inter', 'sans-serif'] } }
+            }
+        }
+    </script>
+    <script>
+        if (localStorage.getItem('qc-theme') !== 'light') { document.documentElement.classList.add('dark'); }
+    </script>
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/redesign.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans antialiased flex h-screen overflow-hidden">
+
+    <aside id="app-sidebar"></aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-[#F8FAFC] dark:bg-gray-900">
+        <header class="header-premium px-8 py-5">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Gerenciar Configurações</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Adicione ou remova Fornecedores, Produtos e Causas baseadas.</p>
+        </header>
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                
+                <!-- Fornecedores -->
+                <div class="bg-white dark:bg-gray-800 card-premium p-5 border border-gray-100 dark:border-gray-700 flex flex-col max-h-[400px]">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i class="ph ph-truck text-brand-600"></i> Fornecedores</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-supplier" placeholder="Novo Fornecedor..." class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                        <button onclick="addSetting('suppliers', 'new-supplier')" class="bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-brand-700 shrink-0"><i class="ph ph-plus"></i></button>
+                    </div>
+                    <ul id="list-suppliers" class="space-y-2 overflow-y-auto pr-2 flex-1"></ul>
+                </div>
+
+                <!-- Produtos -->
+                <div class="bg-white dark:bg-gray-800 card-premium p-5 border border-gray-100 dark:border-gray-700 flex flex-col max-h-[400px]">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i class="ph ph-package text-brand-600"></i> Produtos</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-product" placeholder="Novo Produto..." class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                        <button onclick="addSetting('products', 'new-product')" class="bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-brand-700 shrink-0"><i class="ph ph-plus"></i></button>
+                    </div>
+                    <ul id="list-products" class="space-y-2 overflow-y-auto pr-2 flex-1"></ul>
+                </div>
+
+                <!-- Causas -->
+                <div class="bg-white dark:bg-gray-800 card-premium p-5 border border-gray-100 dark:border-gray-700 flex flex-col max-h-[400px]">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i class="ph ph-warning-circle text-brand-600"></i> Motivos (Causas)</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-reason" placeholder="Novo Motivo..." class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                        <button onclick="addSetting('reasons', 'new-reason')" class="bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-brand-700 shrink-0"><i class="ph ph-plus"></i></button>
+                    </div>
+                    <ul id="list-reasons" class="space-y-2 overflow-y-auto pr-2 flex-1"></ul>
+                </div>
+
+                <!-- Destinos -->
+                <div class="bg-white dark:bg-gray-800 card-premium p-5 border border-gray-100 dark:border-gray-700 flex flex-col max-h-[400px]">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i class="ph ph-map-pin text-brand-600"></i> Destinos</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-destination" placeholder="Novo Destino..." class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                        <button onclick="addSetting('destinations', 'new-destination')" class="bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-brand-700 shrink-0"><i class="ph ph-plus"></i></button>
+                    </div>
+                    <ul id="list-destinations" class="space-y-2 overflow-y-auto pr-2 flex-1"></ul>
+                </div>
+
+                <!-- Status -->
+                <div class="bg-white dark:bg-gray-800 card-premium p-5 border border-gray-100 dark:border-gray-700 flex flex-col max-h-[400px]">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i class="ph ph-activity text-brand-600"></i> Status</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-status" placeholder="Novo Status..." class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                        <button onclick="addSetting('statuses', 'new-status')" class="bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-brand-700 shrink-0"><i class="ph ph-plus"></i></button>
+                    </div>
+                    <ul id="list-statuses" class="space-y-2 overflow-y-auto pr-2 flex-1"></ul>
+                </div>
+
+                <!-- Tipos de Processo -->
+                <div class="bg-white dark:bg-gray-800 card-premium p-5 border border-gray-100 dark:border-gray-700 flex flex-col max-h-[400px]">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i class="ph ph-git-merge text-brand-600"></i> Tipos de Processo</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-processtype" placeholder="Novo Tipo..." class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                        <button onclick="addSetting('process_types', 'new-processtype')" class="bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-brand-700 shrink-0"><i class="ph ph-plus"></i></button>
+                    </div>
+                    <ul id="list-processtypes" class="space-y-2 overflow-y-auto pr-2 flex-1"></ul>
+                </div>
+
+                <!-- Unidades de Medida -->
+                <div class="bg-white dark:bg-gray-800 card-premium p-5 border border-gray-100 dark:border-gray-700 flex flex-col max-h-[400px]">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i class="ph ph-scales text-brand-600"></i> Unid. de Medida</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-measureunit" placeholder="Nova Unidade..." class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                        <button onclick="addSetting('measure_units', 'new-measureunit')" class="bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-brand-700 shrink-0"><i class="ph ph-plus"></i></button>
+                    </div>
+                    <ul id="list-measureunits" class="space-y-2 overflow-y-auto pr-2 flex-1"></ul>
+                </div>
+
+                <!-- Responsáveis -->
+                <div class="bg-white dark:bg-gray-800 card-premium p-5 border border-gray-100 dark:border-gray-700 flex flex-col max-h-[400px]">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i class="ph ph-users text-brand-600"></i> Responsáveis</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-responsible" placeholder="Novo Responsável..." class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                        <button onclick="addSetting('responsibles', 'new-responsible')" class="bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-brand-700 shrink-0"><i class="ph ph-plus"></i></button>
+                    </div>
+                    <ul id="list-responsibles" class="space-y-2 overflow-y-auto pr-2 flex-1"></ul>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script>requireAuth();</script>
+    <script src="js/theme.js"></script>
+    <script src="js/components/sidebar.js"></script>
+    <script src="js/data/api.js"></script>
+    <script>
+        // Carrega listas
+        async function loadLists() {
+            const data = await loadSettings();
+            if (data) {
+                renderList('list-suppliers', data.suppliers, 'suppliers');
+                renderList('list-products', data.products, 'products');
+                renderList('list-reasons', data.reasons, 'reasons');
+                renderList('list-destinations', data.destinations, 'destinations');
+                renderList('list-statuses', data.statuses, 'statuses');
+                renderList('list-processtypes', data.process_types, 'process_types');
+                renderList('list-measureunits', data.measure_units, 'measure_units');
+                renderList('list-responsibles', data.responsibles, 'responsibles');
+            }
+        }
+
+        function renderList(elementId, items, type) {
+            const ul = document.getElementById(elementId);
+            ul.innerHTML = '';
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-lg text-sm border border-gray-100 dark:border-gray-600";
+                li.innerHTML = `
+                    <span class="text-gray-700 dark:text-gray-200 font-medium">${item.name}</span>
+                    <button onclick="deleteSetting('${type}', '${item.id}')" class="text-red-500 hover:bg-red-50 p-1 rounded transition-colors" title="Remover"><i class="ph ph-trash"></i></button>
+                `;
+                ul.appendChild(li);
+            });
+        }
+
+        async function addSetting(type, inputId) {
+            const input = document.getElementById(inputId);
+            const name = input.value.trim();
+            if (!name) return;
+            
+            try {
+                await apiAddSetting(type, name);
+                input.value = '';
+                loadLists();
+            } catch (error) {
+                alert('Erro ao adicionar item.');
+            }
+        }
+
+        async function deleteSetting(type, id) {
+            if (!confirm('Tem certeza que deseja remover este item?')) return;
+            try {
+                await apiDeleteSetting(type, id);
+                loadLists();
+            } catch (error) {
+                alert('Erro ao remover item.');
+            }
+        }
+
+        // Executar
+        // Espera o Firebase restaurar a sessão antes de ler o Firestore;
+        // sem isso a consulta sai sem usuário e as regras recusam (permission-denied).
+        auth.onAuthStateChanged((user) => { if (user) loadLists(); });
+    </script>
+    <script src="js/components/presentation.js"></script>
+</body>
+</html>

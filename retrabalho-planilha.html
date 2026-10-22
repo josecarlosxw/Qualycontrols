@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registros de Retrabalho - QualiControl</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { brand: { 500: '#1e4fe0', 600: '#2c63f5', 800: '#12328f', 900: '#0b0b0f' } }, fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
+    </script>
+    <script>
+        if (localStorage.getItem('qc-theme') !== 'light') { document.documentElement.classList.add('dark'); }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/redesign.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans antialiased flex h-screen overflow-hidden">
+
+    <aside id="app-sidebar"></aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-[#F8FAFC] dark:bg-gray-900">
+        <header class="header-premium px-8 py-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Registros de Retrabalho e Refugo</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Clique em uma célula para editar. As alterações são salvas automaticamente.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                <button id="m2-btn-nova-linha" class="btn-premium btn-brand flex items-center gap-2">
+                    <i class="ph ph-plus text-lg"></i> Nova Linha
+                </button>
+                <button id="m2-btn-exportar" class="btn-premium btn-emerald flex items-center gap-2">
+                    <i class="ph ph-file-xls text-lg"></i> Exportar (.xlsx)
+                </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 flex flex-col overflow-hidden p-8 gap-4">
+            <div class="flex items-center justify-between gap-4">
+                <div class="relative w-full max-w-sm">
+                    <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="m2-planilha-search" placeholder="Buscar em todos os campos..." class="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-brand-500">
+                </div>
+                <span id="m2-planilha-count" class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">0 lançamento(s)</span>
+            </div>
+
+            <div class="flex-1 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-auto">
+                <table class="min-w-full border-collapse table-premium">
+                    <thead><tr id="m2-planilha-thead-row"></tr></thead>
+                    <tbody id="m2-planilha-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>requireAuth();</script>
+    <script src="js/theme.js"></script>
+    <script src="js/components/sidebar.js"></script>
+    <script src="js/components/toast.js"></script>
+    <script src="js/data/api-m2.js"></script>
+    <script src="js/m2/planilha.js"></script>
+    <script src="js/components/presentation.js"></script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retrabalho e Refugo - QualiControl</title>
+    <meta name="description" content="Dashboard de controle de retrabalho e refugo industrial">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { brand: { 50: '#f0f5ff', 100: '#e5edff', 500: '#1e4fe0', 600: '#2c63f5', 800: '#12328f', 900: '#0b0b0f' } }, fontFamily: { sans: ['Inter', 'sans-serif'] } } } }
+    </script>
+    <script>
+        if (localStorage.getItem('qc-theme') !== 'light') { document.documentElement.classList.add('dark'); }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/redesign.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans antialiased flex h-screen overflow-hidden">
+
+    <aside id="app-sidebar"></aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-[#F8FAFC] dark:bg-gray-900">
+        <header class="header-premium px-8 py-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="animate-in">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="ph ph-recycle text-brand-600"></i>
+                        Controle de Retrabalho e Refugo
+                    </h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Quantidades retrabalhadas e refugadas por máquina, turno e motivo.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 animate-in delay-1">
+                    <select id="m2-filter-metric" class="input-premium py-2 px-3 text-sm">
+                        <option value="total">Métrica: Retrabalho + Refugo</option>
+                        <option value="rework">Métrica: Retrabalho</option>
+                        <option value="scrap">Métrica: Refugo</option>
+                    </select>
+                    <a href="retrabalho-importar.html" class="btn-premium flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="ph ph-upload-simple text-lg"></i> Importar
+                    </a>
+                    <button id="m2-export-dashboard" class="btn-premium btn-emerald flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="ph ph-file-xls text-lg"></i> Exportar Excel
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-center gap-3 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                <select id="m2-filter-period" class="input-premium py-2 px-3 text-sm">
+                    <option value="last30">Últimos 30 Dias</option>
+                    <option value="last90">Últimos 90 Dias</option>
+                    <option value="thisYear" selected>Este Ano</option>
+                    <option value="all">Todo Período</option>
+                </select>
+                <input type="date" id="m2-filter-from" class="input-premium py-2 px-3 text-sm" title="Data inicial">
+                <input type="date" id="m2-filter-to" class="input-premium py-2 px-3 text-sm" title="Data final">
+                <select id="m2-filter-machine" class="input-premium py-2 px-3 text-sm"><option value="all">Todas as Máquinas</option></select>
+                <select id="m2-filter-shift" class="input-premium py-2 px-3 text-sm"><option value="all">Todos os Turnos</option></select>
+                <select id="m2-filter-reason" class="input-premium py-2 px-3 text-sm"><option value="all">Todos os Motivos</option></select>
+                <select id="m2-filter-product" class="input-premium py-2 px-3 text-sm"><option value="all">Todos os Produtos</option></select>
+                <select id="m2-filter-responsible" class="input-premium py-2 px-3 text-sm"><option value="all">Todos os Responsáveis</option></select>
+                <button id="m2-filter-clear" class="btn-premium flex items-center gap-2 px-3 py-2 rounded-lg text-sm">
+                    <i class="ph ph-broom"></i> Limpar
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="max-w-7xl mx-auto space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="kpi-card kpi-total">
+                        <div class="kpi-icon"><i class="ph ph-stack"></i></div>
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Total de Lançamentos</p>
+                        <h3 class="kpi-value" id="m2-kpi-total">—</h3>
+                        <p class="kpi-subvalue" id="m2-kpi-total-sub">0 registro(s)</p>
+                    </div>
+                    <div class="kpi-card kpi-rework">
+                        <div class="kpi-icon"><i class="ph ph-arrows-clockwise"></i></div>
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Retrabalho</p>
+                        <h3 class="kpi-value" id="m2-kpi-rework">—</h3>
+                        <p class="kpi-subvalue" id="m2-kpi-rework-sub">0,0% do total</p>
+                    </div>
+                    <div class="kpi-card kpi-scrap">
+                        <div class="kpi-icon"><i class="ph ph-trash"></i></div>
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Refugo</p>
+                        <h3 class="kpi-value" id="m2-kpi-scrap">—</h3>
+                        <p class="kpi-subvalue" id="m2-kpi-scrap-sub">0,0% do total</p>
+                    </div>
+                </div>
+
+                <div class="chart-card animate-in delay-2">
+                    <h3 class="chart-title text-gray-900 dark:text-white"><i class="ph ph-chart-line"></i> Evolução Mensal</h3><p class="chart-caption">Distribuição no período selecionado.</p>
+                    <div class="h-72 w-full"><canvas id="m2EvolutionChart"></canvas></div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="chart-card animate-in delay-3">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                            <h3 class="chart-title text-gray-900 dark:text-white mb-0"><i class="ph ph-wrench"></i> Manutenção Programada</h3>
+                            <select id="m2-maint-month-select" class="input-premium py-1.5 px-3 text-sm" aria-label="Mês da manutenção"></select>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 h-auto sm:h-60 content-center">
+                            <div class="kpi-card min-w-0 text-center"><h3 class="kpi-value" id="m2-maint-week">0</h3><p class="kpi-subvalue">Esta semana</p><p class="text-xs text-gray-500 mt-1" id="m2-maint-week-label"></p></div>
+                            <div class="kpi-card min-w-0 text-center"><h3 class="kpi-value" id="m2-maint-month">0</h3><p class="kpi-subvalue">Este mês</p><p class="text-xs text-gray-500 mt-1" id="m2-maint-month-label"></p></div>
+                            <div class="kpi-card min-w-0 text-center"><h3 class="kpi-value" id="m2-maint-year">0</h3><p class="kpi-subvalue">Este ano</p><p class="text-xs text-gray-500 mt-1" id="m2-maint-year-label"></p></div>
+                        </div>
+                    </div>
+                    <div class="chart-card animate-in delay-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                            <h3 class="chart-title text-gray-900 dark:text-white mb-0"><i class="ph ph-gear-six"></i> Indicadores Gerais</h3>
+                            <select id="m2-chart-machine-metric" class="input-premium py-1.5 px-3 text-sm">
+                                <option value="total">Retrabalho + Refugo</option>
+                                <option value="rework">Retrabalho</option>
+                                <option value="scrap">Refugo</option>
+                            </select>
+                        </div>
+                        <div class="h-72 w-full"><canvas id="m2MachineChart"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6">
+                    <div class="chart-card animate-in delay-6">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                            <h3 class="chart-title text-gray-900 dark:text-white mb-0"><i class="ph ph-clock"></i> Não Conformidades por Turno</h3>
+                            <select id="m2-chart-shift-metric" class="input-premium py-1.5 px-3 text-sm">
+                                <option value="total">Retrabalho + Refugo</option>
+                                <option value="rework">Retrabalho</option>
+                                <option value="scrap">Refugo</option>
+                            </select>
+                        </div>
+                        <div class="h-72 w-full"><canvas id="m2ShiftChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>requireAuth();</script>
+    <script src="js/theme.js"></script>
+    <script src="js/components/sidebar.js"></script>
+    <script src="js/components/toast.js"></script>
+    <script src="js/data/api-m2.js"></script>
+    <script src="js/m2/dashboard.js"></script>
+    <script src="js/components/presentation.js"></script>
+</body>
+</html>
